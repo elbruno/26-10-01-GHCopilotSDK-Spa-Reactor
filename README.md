@@ -13,10 +13,10 @@ autenticado y Microsoft Edge o Google Chrome. Desde la raíz de este repositorio
 .\Initialize-DemoRepo.ps1
 ```
 
-El script valida las herramientas, restaura dependencias, compila, instala
+El script valida las versiones, restaura dependencias, compila, instala
 Playwright MCP localmente y ejecuta las comprobaciones sin llamar al modelo.
-Si falta autenticación, ejecutar `copilot login` fuera de cámara y volver a
-ejecutar el script.
+No se necesita un entorno virtual de Python. Si falta autenticación, ejecutar
+`copilot login` fuera de cámara y volver a ejecutar el script.
 
 Comprobaciones equivalentes, si se desea ejecutarlas por separado:
 
