@@ -20,8 +20,14 @@ func main() {
 	}
 	defer session.Disconnect()
 
+	prompt := "Explica en una frase qué aporta GitHub Copilot SDK para programadores de Go."
+	fmt.Println("Pregunta:")
+	fmt.Println(prompt)
+	fmt.Println()
+	fmt.Println("Respuesta:")
+
 	response, err := session.SendAndWait(context.Background(), copilot.MessageOptions{
-		Prompt: "Explica en una frase qué aporta GitHub Copilot SDK para programadores de Go.",
+		Prompt: prompt,
 	})
 	if err != nil {
 		panic(err)

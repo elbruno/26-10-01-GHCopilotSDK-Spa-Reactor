@@ -5,6 +5,7 @@ node_modules/
 __pycache__/
 *.pyc
 *.egg-info/
+target/
 examples/go/copilot-sdk-hello
 examples/go/copilot-sdk-hello.exe
 exhibit.html

@@ -5,8 +5,14 @@ param(
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+$env:PYTHONUTF8 = '1'
 
 $examplesRoot = $PSScriptRoot
+$cargoBin = Join-Path $HOME '.cargo\bin'
+if ((Test-Path -LiteralPath $cargoBin) -and ($env:PATH -notlike "*$cargoBin*")) {
+    $env:PATH = "$cargoBin;$env:PATH"
+}
 
 if ($SkipSetup -and $SetupOnly) {
     throw '-SkipSetup y -SetupOnly no se pueden usar juntos.'
@@ -30,7 +36,7 @@ function Invoke-Checked {
     }
 }
 
-foreach ($command in @('copilot', 'dotnet', 'python', 'go', 'node', 'npm')) {
+foreach ($command in @('copilot', 'dotnet', 'python', 'go', 'node', 'npm', 'rustup', 'rustc', 'cargo')) {
     if (-not (Get-Command $command -ErrorAction SilentlyContinue)) {
         throw "$command no está disponible."
     }
@@ -59,11 +65,20 @@ if (-not $SkipSetup) {
     Invoke-Checked 'Preparando TypeScript' {
         & npm --prefix (Join-Path $examplesRoot 'typescript') ci --no-audit --no-fund
     }
+
+    Invoke-Checked 'Preparando Rust' {
+        & rustup toolchain install stable-x86_64-pc-windows-gnu --profile minimal
+        if ($LASTEXITCODE -ne 0) {
+            return
+        }
+        & cargo +stable-x86_64-pc-windows-gnu build --locked `
+            --manifest-path (Join-Path $examplesRoot 'rust\Cargo.toml')
+    }
 }
 
 if ($SetupOnly) {
     Write-Host ''
-    Write-Host 'Los cuatro ejemplos quedaron preparados; no se llamó al modelo.'
+    Write-Host 'Los cinco ejemplos quedaron preparados; no se llamó al modelo.'
     return
 }
 
@@ -93,5 +108,10 @@ Invoke-Checked 'TypeScript' {
     & npm --prefix (Join-Path $examplesRoot 'typescript') start
 }
 
+Invoke-Checked 'Rust' {
+    & cargo +stable-x86_64-pc-windows-gnu run --quiet --locked `
+        --manifest-path (Join-Path $examplesRoot 'rust\Cargo.toml')
+}
+
 Write-Host ''
-Write-Host 'Los cuatro ejemplos finalizaron correctamente.'
+Write-Host 'Los cinco ejemplos finalizaron correctamente.'

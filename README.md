@@ -1,14 +1,47 @@
 # GitHub Copilot SDK — demos .NET
 
-Tres recorridos preparados para la sesión:
+Cuatro recorridos preparados para la sesión:
 
-1. **Museum Exhibit Studio** — demo principal y progresiva.
-2. **Accessibility Reviewer** — plan B ya ensayado.
-3. **BYOK con Microsoft Foundry** — consola independiente con Microsoft Entra.
+1. **Hello worlds** — el mismo patrón en C#, Python, Go, TypeScript y Rust.
+2. **Conceptos del SDK en C#** — streaming, system prompt, tool local,
+   permisos, MCP, skills y WorkIQ seguro.
+3. **Museum Exhibit Studio** — demo principal de la segunda mitad.
+4. **Accessibility Reviewer** — plan B ya ensayado.
+
+BYOK con Microsoft Foundry queda preparado como bloque opcional.
 
 Adaptados del
 [workshop oficial](https://github.com/github/copilot-sdk-workshop/tree/716bdaaf629817606873b4e22d551e900985c92c).
 Ver `THIRD-PARTY-NOTICES.txt`.
+
+## Primera mitad: conceptos del SDK en C#
+
+```powershell
+dotnet restore .\csharp-sdk-concepts\CsharpSdkConcepts.csproj --locked-mode
+dotnet build .\csharp-sdk-concepts\CsharpSdkConcepts.csproj --no-restore
+dotnet run --no-build --project .\csharp-sdk-concepts\CsharpSdkConcepts.csproj -- --self-test
+dotnet run --no-build --project .\csharp-sdk-concepts\CsharpSdkConcepts.csproj -- --preflight
+```
+
+Ejecutar una etapa:
+
+```powershell
+dotnet run --no-build --project .\csharp-sdk-concepts\CsharpSdkConcepts.csproj -- --stage 01 --model gpt-5.4-mini
+```
+
+| Etapa | Concepto |
+|---|---|
+| 01 | Streaming de eventos. |
+| 02 | System prompt. |
+| 03 | Tool local sin permiso adicional. |
+| 04 | Tool local con `approve-once`. |
+| 05 | Wikipedia MCP con allowlist. |
+| 06 | Skill local cargada desde el repo. |
+| 07 | WorkIQ `ask` con salida agregada y validación determinista. |
+
+La etapa 07 es opcional. Requiere el plugin WorkIQ instalado y su ruta absoluta
+en `WORKIQ_PLUGIN_DIR`. Solo expone `workiq-ask`; si la tool falla o la respuesta
+incluye campos no permitidos, la aplicación bloquea la salida.
 
 ## Demo principal: Museum Exhibit Studio
 
@@ -74,7 +107,7 @@ dotnet run --no-build --project .\AccessibilityDemo.csproj -- --stage 05 --model
 .\Rehearse-Accessibility.ps1
 ```
 
-## Tercera demo: BYOK con Microsoft Foundry
+## Bloque opcional: BYOK con Microsoft Foundry
 
 La consola `byok` usa `ProviderConfig`, Responses API y un token Microsoft Entra
 obtenido mediante Azure CLI. No usa una API key ni imprime el token.
@@ -99,7 +132,7 @@ Consultar [`byok\README.md`](byok/README.md) antes del directo.
 
 ## Otros lenguajes y streaming
 
-- Primeras sesiones mínimas: [`examples`](examples/README.md).
+- Primeras sesiones mínimas en cinco lenguajes: [`examples`](examples/README.md).
 - Guía complementaria: [Streaming de una respuesta — español](docs/02-streaming-es.md).
 
 ## Límites

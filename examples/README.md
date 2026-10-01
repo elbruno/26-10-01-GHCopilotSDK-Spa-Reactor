@@ -1,15 +1,16 @@
 # Hello, GitHub Copilot SDK
 
-Cuatro primeras sesiones mínimas para comparar el mismo patrón en C#, Python,
-Go y TypeScript. Están adaptadas del
+Cinco primeras sesiones mínimas para comparar el mismo patrón en C#, Python,
+Go, TypeScript y Rust. Están adaptadas del
 [workshop oficial](https://github.com/github/copilot-sdk-workshop/tree/716bdaaf629817606873b4e22d551e900985c92c)
 y fijan GitHub Copilot SDK `1.0.11`.
 
-Cada ejemplo pregunta qué aporta el SDK específicamente a los programadores de
-su lenguaje. Mantiene un cliente, crea una sesión, envía un mensaje, muestra la
-respuesta y libera los recursos. No incluye tools ni permisos.
+Cada ejemplo muestra primero `Pregunta:` y después `Respuesta:`. Pregunta qué
+aporta el SDK específicamente a los programadores de su lenguaje, mantiene un
+cliente, crea una sesión, envía un mensaje y libera los recursos. No incluye
+tools ni permisos.
 
-## Ejecutar los cuatro ejemplos
+## Ejecutar los cinco ejemplos
 
 Desde este directorio:
 
@@ -17,9 +18,12 @@ Desde este directorio:
 .\Run-All.ps1
 ```
 
-El script prepara las dependencias, ejecuta C#, Python, Go y TypeScript en ese
-orden, y muestra cada resultado bajo un encabezado independiente. Son cuatro
+El script prepara las dependencias, ejecuta C#, Python, Go, TypeScript y Rust en
+ese orden, y muestra cada resultado bajo un encabezado independiente. Son cinco
 llamadas reales al modelo y pueden consumir cuota.
+
+En Windows, Rust usa el toolchain `stable-x86_64-pc-windows-gnu` para no depender
+de Visual Studio C++ Build Tools. El setup lo instala mediante `rustup`.
 
 Para repetirlos después de la primera preparación:
 
@@ -65,4 +69,12 @@ go run .
 Set-Location .\typescript
 npm ci
 npm start
+```
+
+### Rust
+
+```powershell
+rustup toolchain install stable-x86_64-pc-windows-gnu --profile minimal
+cargo +stable-x86_64-pc-windows-gnu run --locked `
+  --manifest-path .\rust\Cargo.toml
 ```

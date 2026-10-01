@@ -14,11 +14,18 @@ await using var session = await client.CreateSessionAsync(new SessionConfig
     EnableHostGitOperations = false
 });
 
+const string prompt = "Explica en una frase qué aporta GitHub Copilot SDK " +
+    "para programadores de C#.";
+
+Console.WriteLine("Pregunta:");
+Console.WriteLine(prompt);
+Console.WriteLine();
+Console.WriteLine("Respuesta:");
+
 var response = await session.SendAndWaitAsync(
     new MessageOptions
     {
-        Prompt = "Explica en una frase qué aporta GitHub Copilot SDK " +
-            "para programadores de C#."
+        Prompt = prompt
     },
     TimeSpan.FromSeconds(90));
 

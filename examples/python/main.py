@@ -9,6 +9,15 @@ from copilot.session_events import (
 
 
 async def main() -> None:
+    prompt = (
+        "Explica en una frase qué aporta GitHub Copilot SDK "
+        "para programadores de Python."
+    )
+    print("Pregunta:")
+    print(prompt)
+    print()
+    print("Respuesta:")
+
     async with CopilotClient() as client:
         async with await client.create_session() as session:
             done = asyncio.Event()
@@ -26,10 +35,7 @@ async def main() -> None:
                         done.set()
 
             session.on(on_event)
-            await session.send(
-                "Explica en una frase qué aporta GitHub Copilot SDK "
-                "para programadores de Python."
-            )
+            await session.send(prompt)
             await done.wait()
             if error is not None:
                 raise error
