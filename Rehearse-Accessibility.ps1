@@ -5,11 +5,11 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$project = Join-Path $PSScriptRoot 'museum\MuseumDemo.csproj'
-$logs = Join-Path $PSScriptRoot '..\preparation\museum-rehearsal'
+$project = Join-Path $PSScriptRoot 'AccessibilityDemo.csproj'
+$logs = Join-Path $PSScriptRoot '..\preparation\accessibility-rehearsal'
 New-Item -ItemType Directory -Force $logs | Out-Null
 foreach ($stage in $Stages) {
-    Write-Host "Ensayo Museum $stage (puede consumir cuota). Wikipedia MCP se usa en 06 y 99."
+    Write-Host "Ensayo Accessibility $stage (puede consumir cuota). Pagina local requerida para 05, 06 y 99."
     & dotnet run --no-build --project $project -- --stage $stage --model $Model 2>&1 |
         Tee-Object (Join-Path $logs "$stage.txt")
     if ($LASTEXITCODE -ne 0) {

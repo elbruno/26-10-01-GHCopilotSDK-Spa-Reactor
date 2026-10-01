@@ -7,7 +7,9 @@ try {
   const session = await client.createSession({});
   try {
     const response = await session.sendAndWait({
-      prompt: "Explica en una frase qué aporta GitHub Copilot SDK.",
+      prompt:
+        "Explica en una frase qué aporta GitHub Copilot SDK " +
+        "para programadores de TypeScript.",
     });
     console.log(
       response?.data && "content" in response.data

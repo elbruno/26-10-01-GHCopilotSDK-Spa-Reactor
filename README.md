@@ -1,15 +1,57 @@
-# Accessibility Reviewer — GitHub Copilot SDK
+# GitHub Copilot SDK — demos .NET
 
-Adaptación .NET del [workshop oficial](https://github.com/github/copilot-sdk-workshop/tree/716bdaaf629817606873b4e22d551e900985c92c).
-Ver `THIRD-PARTY-NOTICES.txt`. Proyecto único, etapas numeradas; no escribir
-todo el código en vivo.
+Tres recorridos preparados para la sesión:
 
-Guía complementaria: [Streaming de una respuesta — español](docs/02-streaming-es.md).
+1. **Museum Exhibit Studio** — demo principal y progresiva.
+2. **Accessibility Reviewer** — plan B ya ensayado.
+3. **BYOK con Microsoft Foundry** — consola independiente con Microsoft Entra.
 
-## Preparación
+Adaptados del
+[workshop oficial](https://github.com/github/copilot-sdk-workshop/tree/716bdaaf629817606873b4e22d551e900985c92c).
+Ver `THIRD-PARTY-NOTICES.txt`.
 
-Requisitos: .NET 10 SDK, Node.js 22 o superior, GitHub Copilot CLI
-autenticado y Microsoft Edge o Google Chrome. Desde la raíz de este repositorio:
+## Demo principal: Museum Exhibit Studio
+
+```powershell
+dotnet restore .\museum\MuseumDemo.csproj --locked-mode
+Set-Location .\museum
+npm ci --no-audit --no-fund
+Set-Location ..
+dotnet build .\museum\MuseumDemo.csproj --no-restore
+dotnet run --no-build --project .\museum\MuseumDemo.csproj -- --self-test
+dotnet run --no-build --project .\museum\MuseumDemo.csproj -- --preflight
+```
+
+Ejecutar una etapa:
+
+```powershell
+dotnet run --no-build --project .\museum\MuseumDemo.csproj -- --stage 01 --model gpt-5.4-mini
+```
+
+Cambiar `01` por:
+
+| Etapa | Archivo a mostrar | Resultado observable |
+|---|---|---|
+| 01 | `museum\Stages\01-FirstSession.cs` | Cliente, runtime, sesión y respuesta final. |
+| 02 | `museum\Stages\02-Streaming.cs` | Respuesta incremental. |
+| 03 | `museum\Stages\03-CuratorVoice.cs` | System prompt y voz del curador. |
+| 04 | `museum\Stages\04-ApprovedFacts.cs` | Tool local `approved_fact_lookup`. |
+| 05 | `museum\Stages\05-ProveStructure.cs` | Validación determinista PASS/FAIL. |
+| 06 | `museum\Stages\06-WikipediaResearch.cs` | Sesión MCP separada, allowlist y fuentes. |
+| 99 | `museum\Stages\99-Finished.cs` | Investigación, generación grounded y validación. |
+
+Ensayo completo:
+
+```powershell
+.\Rehearse.ps1
+```
+
+La investigación de Wikipedia nunca modifica los hechos aprobados usados para
+generar la exhibición.
+
+## Plan B: Accessibility Reviewer
+
+El proyecto original continúa disponible en la raíz:
 
 ```powershell
 dotnet restore .\AccessibilityDemo.csproj --locked-mode
@@ -19,89 +61,52 @@ dotnet run --no-build --project .\AccessibilityDemo.csproj -- --self-test
 dotnet run --no-build --project .\AccessibilityDemo.csproj -- --preflight
 ```
 
-No se necesita un entorno virtual de Python para la demo .NET. Los ejemplos
-opcionales de Python, Go y TypeScript están en [`examples`](examples/README.md).
-Si falta autenticación, ejecutar `copilot login` fuera de cámara.
-
-En un terminal aparte, mantener la página mientras se ejecutan `--review`,
-05, 06 o 99:
+Para las etapas 05, 06 y 99, mantener la página controlada en otro terminal:
 
 ```powershell
 dotnet run --no-build --project .\AccessibilityDemo.csproj -- --serve
 ```
 
-Abrir `http://127.0.0.1:4173/` en el navegador que se comparte. La inspección MCP
-usa **otro Edge, headless y aislado**, no el perfil personal.
-El servidor solo sirve esta página, sin archivos arbitrarios, redirecciones,
-scripts ni recursos externos. Detener con Ctrl+C al terminar.
-
-## Etapas
-
-La aplicación completa se ejecuta con:
+Ejecutar una etapa o el ensayo:
 
 ```powershell
-dotnet run --no-build --project .\AccessibilityDemo.csproj -- --review --model gpt-5.4-mini
+dotnet run --no-build --project .\AccessibilityDemo.csproj -- --stage 05 --model gpt-5.4-mini
+.\Rehearse-Accessibility.ps1
 ```
 
-Este flujo inspecciona la página controlada, consulta el catálogo WCAG de la
-aplicación, usa MCP y demuestra una denegación. Las etapas siguientes son
-checkpoints didácticos para aislar cada concepto:
+## Tercera demo: BYOK con Microsoft Foundry
+
+La consola `byok` usa `ProviderConfig`, Responses API y un token Microsoft Entra
+obtenido mediante Azure CLI. No usa una API key ni imprime el token.
+
+Configurar en un terminal no compartido:
 
 ```powershell
-dotnet run --no-build --project .\AccessibilityDemo.csproj -- --stage 01 --model gpt-5.4-mini
+$env:FOUNDRY_RESOURCE_URL = 'https://<resource>.openai.azure.com'
+$env:FOUNDRY_MODEL = '<deployment-name>'
 ```
 
-Cambiar solo `01` por la etapa elegida:
-
-| Etapa | Archivo a mostrar en `Stages` | Resultado observable |
-|---|---|---|
-| 01 | `01-FirstSession.cs` | Respuesta completa, sin tools. |
-| 02 | `02-Streaming.cs` | Texto incremental; contador de deltas mayor que cero. |
-| 03 | `03-SystemPrompt.cs` | Rol persistente, evidencia frente a hipótesis. |
-| 04 | `04-LocalTool.cs` | Permiso `custom-tool`, handler 4.1.2 y éxito real. |
-| 05 | `05-Mcp.cs` | Navegación MCP autorizada y lectura del snapshot de esta ejecución. |
-| 06 | `06-Permissions.cs` | Primero permitido; luego `/blocked` denegado, tool sin éxito. |
-| 99 | `99-Finished.cs` | Aplicación completa: persona, streaming, MCP, catálogo y denegación. |
-
-`Program.cs` muestra cliente → autenticación → configuración → sesión →
-eventos → turno → comprobaciones → dispose. `Runtime\DemoPolicy.cs` muestra
-la autorización efectiva; el system prompt no es la barrera de seguridad.
-Las tools locales no omiten permisos. La única tool MCP expuesta es
-`browser_navigate`; no hay shell, escritura, clicks, evaluación de JavaScript
-ni navegación arbitraria. Todo lo no reconocido se deniega.
-
-Los criterios WCAG del catálogo son orientación limitada, no una auditoría.
-El snapshot no prueba contraste ni teclado. La allowlist de origen de Playwright
-es defensa adicional, **no sandbox de red**; no garantiza bloquear redirecciones.
-La URL exacta se valida en el host y la página local no redirige ni carga recursos
-externos. No reutilizar esta política para sitios arbitrarios.
-
-Cada turno tiene límite de 90 s y cada proceso, 180 s; Ctrl+C cancela.
-Un error produce salida `[ERROR]` y código distinto de cero, nunca `[verified]`.
-Los snapshots de cada proceso están en un directorio nuevo bajo
-`bin\Debug\net10.0\.runs`; el lector limita tamaño, rechaza enlaces y no reutiliza
-un snapshot consumido. No son evidencia de una ejecución posterior.
-
-## Respaldo y ensayo
+Preparar y ejecutar:
 
 ```powershell
-# Estado terminado ya compilado; no editarlo en el directo.
-dotnet run --no-build --project .\AccessibilityDemo.csproj -- --stage 99 --model gpt-5.4-mini
-
-# Con el servidor local en el otro terminal: ejecuta y guarda las siete etapas
-# en .runs\rehearsal.
-.\Rehearse.ps1
-
-# Volver a comprobar solo MCP/permisos y respaldo.
-.\Rehearse.ps1 -Stages 05,06,99
+dotnet restore .\byok\ByokConsole.csproj --locked-mode
+dotnet build .\byok\ByokConsole.csproj --no-restore
+dotnet run --no-build --project .\byok\ByokConsole.csproj -- --preflight
+dotnet run --no-build --project .\byok\ByokConsole.csproj -- --run
 ```
 
-`--no-build` utiliza el último binario compilado aunque una edición del código
-falle al compilar. No recompilar una edición no ensayada antes de usar el respaldo.
-99 es un **estado terminado del código**, no elimina la dependencia de
-autenticación, cuota, modelo y MCP. En este repositorio público no se incluyen
-salidas de ensayo ni credenciales.
+Consultar [`byok\README.md`](byok/README.md) antes del directo.
 
-Las salidas varían: comprobar los marcadores de eventos/handlers y `[verified]`,
-no prometer un texto exacto. No hay hooks/custom agents/BYOK implementados:
-tratarlos solo conceptualmente.
+## Otros lenguajes y streaming
+
+- Primeras sesiones mínimas: [`examples`](examples/README.md).
+- Guía complementaria: [Streaming de una respuesta — español](docs/02-streaming-es.md).
+
+## Límites
+
+- Los outputs de modelos varían: comprobar eventos, tools y marcadores de
+  validación, no prometer texto exacto.
+- Un system prompt guía; no autoriza.
+- Una allowlist o permiso no equivale a sandbox.
+- Las comprobaciones estructurales no prueban exactitud factual.
+- No guardar endpoints privados, tokens, claves ni salidas de ensayo en el repo.

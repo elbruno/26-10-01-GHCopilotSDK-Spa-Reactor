@@ -26,7 +26,10 @@ async def main() -> None:
                         done.set()
 
             session.on(on_event)
-            await session.send("Explica en una frase qué aporta GitHub Copilot SDK.")
+            await session.send(
+                "Explica en una frase qué aporta GitHub Copilot SDK "
+                "para programadores de Python."
+            )
             await done.wait()
             if error is not None:
                 raise error

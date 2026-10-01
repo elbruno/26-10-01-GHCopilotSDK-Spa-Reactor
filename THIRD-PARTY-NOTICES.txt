@@ -1,7 +1,9 @@
 Adapted from github/copilot-sdk-workshop, revision
 716bdaaf629817606873b4e22d551e900985c92c:
 finished/dotnet/accessibility-report (rule catalog, scoped permissions,
-snapshot reader, streaming pattern) and docs/target-app/index.html.
+snapshot reader, streaming pattern), docs/target-app/index.html, and
+finished/dotnet/museum-exhibit-studio (curator facts, streaming, validation,
+scoped Wikipedia MCP permissions).
 Source: https://github.com/github/copilot-sdk-workshop
 
 MIT License

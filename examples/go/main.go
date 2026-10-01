@@ -21,7 +21,7 @@ func main() {
 	defer session.Disconnect()
 
 	response, err := session.SendAndWait(context.Background(), copilot.MessageOptions{
-		Prompt: "Explica en una frase qué aporta GitHub Copilot SDK.",
+		Prompt: "Explica en una frase qué aporta GitHub Copilot SDK para programadores de Go.",
 	})
 	if err != nil {
 		panic(err)
