@@ -1,0 +1,8 @@
+{
+  "name": "copilot-accessibility-demo",
+  "private": true,
+  "version": "1.0.0",
+  "dependencies": {
+    "@playwright/mcp": "0.0.78"
+  }
+}
