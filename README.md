@@ -37,11 +37,24 @@ dotnet run --no-build --project .\csharp-sdk-concepts\CsharpSdkConcepts.csproj -
 | 04 | Tool local con `approve-once`. |
 | 05 | Wikipedia MCP con allowlist. |
 | 06 | Skill local cargada desde el repo. |
-| 07 | WorkIQ `ask` con salida agregada y validación determinista. |
+| 07 | WorkIQ `ask`: chat interactivo con salida agregada y validación determinista. |
 
 La etapa 07 es opcional. Requiere el plugin WorkIQ instalado y su ruta absoluta
-en `WORKIQ_PLUGIN_DIR`. Solo expone `workiq-ask`; si la tool falla o la respuesta
-incluye campos no permitidos, la aplicación bloquea la salida.
+en `WORKIQ_PLUGIN_DIR`:
+
+```powershell
+$env:WORKIQ_PLUGIN_DIR = 'C:\Users\<your user>\.copilot\installed-plugins\copilot-plugins\workiq'
+dotnet run --no-build --project .\csharp-sdk-concepts\CsharpSdkConcepts.csproj -- --stage 07 --model gpt-5.4-mini
+```
+
+Abre un chat (`WorkIQ>`) donde se escriben las preguntas; la aplicación muestra
+cuatro sugeridas y se sale con `salir`. También acepta `--question "texto"` para
+una sola pregunta.
+
+Hay dos barreras: la pregunta se rechaza si pide contenido (asunto, remitente,
+cita) y la respuesta se valida contra un contrato JSON agregado. Solo se expone
+`workiq-ask`; si la tool falla o el JSON incluye campos no permitidos, la
+aplicación bloquea la salida.
 
 ## Demo principal: Museum Exhibit Studio
 

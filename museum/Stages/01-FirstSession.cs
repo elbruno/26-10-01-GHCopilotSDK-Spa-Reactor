@@ -1,3 +1,6 @@
+// Etapa Museum 01 — Primera sesion.
+// Enseña el minimo de Copilot SDK aplicado a una app: prompt, sesion y respuesta
+// completa del curador sin streaming, tools ni persona especializada.
 namespace MuseumExhibitStudio.Stages;
 
 public static class FirstSession

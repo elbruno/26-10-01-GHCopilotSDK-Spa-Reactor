@@ -1,3 +1,6 @@
+# Ensayo automatizado de Accessibility.
+# Enseña como recorrer etapas del SDK y guardar logs de streaming, permisos,
+# MCP y tools locales; requiere la pagina local para las etapas con navegador.
 param(
     [string]$Model = 'gpt-5.4-mini',
     [ValidateSet('01', '02', '03', '04', '05', '06', '99')]
@@ -9,6 +12,7 @@ $project = Join-Path $PSScriptRoot 'AccessibilityDemo.csproj'
 $logs = Join-Path $PSScriptRoot '..\preparation\accessibility-rehearsal'
 New-Item -ItemType Directory -Force $logs | Out-Null
 foreach ($stage in $Stages) {
+    # Las etapas 05, 06 y 99 demuestran navegador MCP y politicas de permiso.
     Write-Host "Ensayo Accessibility $stage (puede consumir cuota). Pagina local requerida para 05, 06 y 99."
     & dotnet run --no-build --project $project -- --stage $stage --model $Model 2>&1 |
         Tee-Object (Join-Path $logs "$stage.txt")

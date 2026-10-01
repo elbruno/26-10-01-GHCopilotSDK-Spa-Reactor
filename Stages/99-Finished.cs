@@ -1,3 +1,6 @@
+// Etapa 99 — Accessibility Reviewer completo.
+// Combina streaming, system prompt, tool local, MCP y permisos para mostrar el
+// estado de recuperacion si durante el vivo hay que saltar a la app terminada.
 namespace AccessibilityDemo.Stages;
 
 public static class Finished

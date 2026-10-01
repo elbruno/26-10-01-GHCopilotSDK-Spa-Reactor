@@ -1,3 +1,6 @@
+// Descriptor de etapas de Accessibility.
+// Enseña que la demo no cambia codigo entre pasos: cada bandera activa piezas
+// de SessionConfig como Streaming, SystemMessage, Tools, McpServers y permisos.
 namespace AccessibilityDemo.Stages;
 
 public sealed record DemoStage(
@@ -5,6 +8,7 @@ public sealed record DemoStage(
     bool Streaming = false, bool Persona = false, bool Rules = false,
     bool Browser = false, bool Denial = false)
 {
+    // Find centraliza el enrutamiento CLI para que cada etapa sea reproducible.
     public static DemoStage Find(string id) => id switch
     {
         "01" => FirstSession.Create(),

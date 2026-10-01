@@ -1,3 +1,6 @@
+// Etapa Museum 03 — Voz del curador.
+// Enseña SystemMessageConfig: el host reemplaza la persona generica por una voz
+// interpretativa y limites editoriales propios de la aplicacion.
 namespace MuseumExhibitStudio.Stages;
 
 public static class CuratorVoice

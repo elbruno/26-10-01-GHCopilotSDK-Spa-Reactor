@@ -1,3 +1,6 @@
+// Descriptor de etapas de Museum.
+// Enseña que cada paso activa banderas de SessionConfig: streaming, persona,
+// facts/tool local, validacion, investigacion MCP y generacion.
 namespace MuseumExhibitStudio.Stages;
 
 public sealed record MuseumStage(
@@ -11,6 +14,7 @@ public sealed record MuseumStage(
     bool Research = false,
     bool Generate = true)
 {
+    // Find hace que la CLI sea reproducible: el numero selecciona una configuracion fija.
     public static MuseumStage Find(string id) => id switch
     {
         "01" => FirstSession.Create(),

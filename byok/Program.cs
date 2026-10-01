@@ -1,3 +1,7 @@
+// BYOK con Microsoft Foundry.
+// Enseña ProviderConfig: el Copilot SDK puede usar un endpoint/modelo propio
+// compatible con OpenAI mientras el runtime local sigue orquestando la sesion.
+// Se usa como bloque opcional para explicar endpoint, modelo y autenticacion.
 using Azure.Core;
 using Azure.Identity;
 using GitHub.Copilot;
@@ -11,7 +15,9 @@ if (args is not ["--preflight"] && args is not ["--run"])
 
 var resourceUrl = RequiredEnvironment("FOUNDRY_RESOURCE_URL");
 var model = RequiredEnvironment("FOUNDRY_MODEL");
+// El endpoint se deriva del recurso y siempre apunta a la ruta OpenAI-compatible.
 var endpoint = BuildEndpoint(resourceUrl);
+// AzureCliCredential evita guardar tokens o claves en el repositorio de la demo.
 var credential = new AzureCliCredential();
 
 using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(120));
@@ -19,6 +25,7 @@ Console.CancelKeyPress += (_, e) => { e.Cancel = true; cancellation.Cancel(); };
 
 try
 {
+    // Preflight valida Microsoft Entra sin enviar ningun prompt al modelo.
     var token = await credential.GetTokenAsync(
         new TokenRequestContext(["https://ai.azure.com/.default"]),
         cancellation.Token);
@@ -34,14 +41,17 @@ try
         return;
     }
 
+    // El CopilotClient sigue siendo necesario: BYOK cambia el proveedor del modelo.
     await using var client = new CopilotClient(new CopilotClientOptions
     {
         Connection = RuntimeConnection.ForStdio("copilot"),
         WorkingDirectory = AppContext.BaseDirectory
     });
+    // StartAsync arranca el runtime antes de crear una sesion con ProviderConfig.
     await client.StartAsync(cancellation.Token);
 
 #pragma warning disable GHCP001 // BYOK bearer-token callbacks are experimental in SDK 1.0.11.
+    // SessionConfig.Provider redirige el modelo a Foundry en vez del proveedor Copilot.
     await using var session = await client.CreateSessionAsync(new SessionConfig
     {
         ClientName = "copilot-sdk-byok-foundry",
@@ -51,6 +61,7 @@ try
             Type = "openai",
             BaseUrl = endpoint.AbsoluteUri,
             WireApi = "responses",
+            // BearerTokenProvider entrega tokens Entra frescos sin imprimirlos.
             BearerTokenProvider = async _ =>
             {
                 var refreshed = await credential.GetTokenAsync(
@@ -59,6 +70,7 @@ try
                 return refreshed.Token;
             }
         },
+        // AvailableTools vacio muestra una sesion BYOK sin herramientas externas.
         AvailableTools = [],
         Tools = [],
         EnableConfigDiscovery = false,
@@ -67,6 +79,7 @@ try
     }, cancellation.Token);
 #pragma warning restore GHCP001
 
+    // SendAndWaitAsync demuestra que el flujo de prompt/respuesta no cambia con BYOK.
     var response = await session.SendAndWaitAsync(
         new MessageOptions
         {
@@ -95,6 +108,7 @@ catch (Exception error) when (error is AuthenticationFailedException or InvalidO
 
 static string RequiredEnvironment(string name)
 {
+    // La configuracion privada vive fuera del codigo y se valida de forma explicita.
     var value = Environment.GetEnvironmentVariable(name)?.Trim();
     return string.IsNullOrWhiteSpace(value)
         ? throw new InvalidOperationException($"Falta la variable de entorno {name}.")
@@ -103,6 +117,7 @@ static string RequiredEnvironment(string name)
 
 static Uri BuildEndpoint(string resourceUrl)
 {
+    // Normaliza la URL para no aceptar endpoints inseguros o mal formados.
     if (!Uri.TryCreate(resourceUrl, UriKind.Absolute, out var resource) ||
         resource.Scheme != Uri.UriSchemeHttps ||
         string.IsNullOrWhiteSpace(resource.Host))

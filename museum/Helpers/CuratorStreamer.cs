@@ -1,3 +1,7 @@
+// Streaming compartido para Museum.
+// Enseña como suscribirse a eventos del SDK: deltas del asistente, inicio y fin
+// de tools, SessionIdleEvent y SessionErrorEvent durante una respuesta en vivo.
+// Se usa para imprimir el texto como lo ve la audiencia.
 using System.Text;
 using GitHub.Copilot;
 
@@ -22,25 +26,30 @@ public static class CuratorStreamer
         var receivedDelta = false;
         var actualTimeout = timeout ?? GenerationTimeout;
 
+        // session.On<SessionEvent> observa la conversacion sin bloquear el envio del prompt.
         using var subscription = session.On<SessionEvent>(sessionEvent =>
         {
             switch (sessionEvent)
             {
+                // AssistantMessageDeltaEvent trae fragmentos cuando Streaming=true.
                 case AssistantMessageDeltaEvent delta when !string.IsNullOrEmpty(delta.Data.DeltaContent):
                     receivedDelta = true;
                     response.Append(delta.Data.DeltaContent);
                     Console.Write(delta.Data.DeltaContent);
                     break;
+                // Algunas configuraciones pueden entregar un mensaje completo en vez de deltas.
                 case AssistantMessageEvent message when !receivedDelta && !string.IsNullOrEmpty(message.Data.Content):
                     response.Append(message.Data.Content);
                     Console.Write(message.Data.Content);
                     break;
+                // Eventos de tool hacen visible la orquestacion del runtime.
                 case ToolExecutionStartEvent tool:
                     Console.WriteLine($"\n[tool:start] {tool.Data.ToolName}");
                     break;
                 case ToolExecutionCompleteEvent tool:
                     Console.WriteLine($"[tool:done] success={tool.Data.Success}");
                     break;
+                // SessionIdleEvent marca que el turno termino y la salida ya esta completa.
                 case SessionIdleEvent:
                     Console.WriteLine();
                     completed.TrySetResult();
@@ -51,6 +60,7 @@ public static class CuratorStreamer
             }
         });
 
+        // SendAsync inicia el turno; la finalizacion se detecta por eventos.
         await session.SendAsync(new MessageOptions { Prompt = prompt }, cancellationToken);
         var delayTask = Task.Delay(actualTimeout, cancellationToken);
         var finishedTask = await Task.WhenAny(completed.Task, delayTask);

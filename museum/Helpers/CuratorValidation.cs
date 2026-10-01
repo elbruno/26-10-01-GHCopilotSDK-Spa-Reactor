@@ -1,3 +1,7 @@
+// Validacion determinista de Museum.
+// Enseña que el host verifica estructura, longitud y vocabulario prohibido en
+// codigo propio; una respuesta bonita del modelo no basta para pasar la demo.
+// No prueba exactitud factual, solo el contrato que la app puede medir.
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -54,6 +58,7 @@ public static partial class CuratorValidation
     {
         ArgumentNullException.ThrowIfNull(content);
 
+        // El parser busca la forma pedida al modelo, no interpreta intenciones.
         var lines = content.ReplaceLineEndings("\n").Split('\n');
         var titleCount = lines.Count(line => TitlePattern().IsMatch(line));
         var narrativeIndex = FindHeading(lines, "## Narrative");
@@ -85,6 +90,7 @@ public static partial class CuratorValidation
                 .Where(term => content.Contains(term, StringComparison.OrdinalIgnoreCase))
                 .ToArray()));
 
+        // Los errores son explicitos para que el presentador vea que fallo exactamente.
         var errors = new List<string>();
         if (!title.Valid)
         {
@@ -127,6 +133,7 @@ public static partial class CuratorValidation
     {
         ArgumentNullException.ThrowIfNull(validation);
 
+        // El reporte separa checks medibles de revision factual humana.
         var report = new StringBuilder();
         report.AppendLine(validation.Valid
             ? "Structural checks passed."

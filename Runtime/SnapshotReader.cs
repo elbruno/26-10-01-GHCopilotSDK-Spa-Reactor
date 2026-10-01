@@ -1,3 +1,7 @@
+// Lector de snapshots de Accessibility.
+// Enseña una tool local que devuelve evidencia producida por Playwright MCP,
+// pero solo si el archivo pertenece a esta corrida, es pequeno y no es enlace.
+// Existe porque el host no confia en rutas sugeridas por el modelo.
 using GitHub.Copilot;
 using Microsoft.Extensions.AI;
 
@@ -11,9 +15,11 @@ public sealed class SnapshotReader(string outputDirectory)
     public string Read()
     {
         var directory = new DirectoryInfo(outputDirectory);
+        // La tool rechaza directorios inexistentes o reparse points antes de leer.
         if (!directory.Exists || directory.Attributes.HasFlag(FileAttributes.ReparsePoint))
             throw new IOException("No hay directorio de snapshots seguro para esta ejecucion.");
 
+        // Cada snapshot se consume una sola vez para evitar reutilizar evidencia vieja.
         var file = directory.EnumerateFiles("page-*.yml", SearchOption.TopDirectoryOnly)
             .Where(f => !consumed.Contains(f.FullName) &&
                         !f.Attributes.HasFlag(FileAttributes.ReparsePoint) &&
@@ -29,8 +35,10 @@ public sealed class SnapshotReader(string outputDirectory)
         return text;
     }
 
+    // DefineTool publica la lectura como capacidad del SDK, no como acceso libre a disco.
     public AIFunction Create() => CopilotTool.DefineTool(
         () => Task.FromResult(Read()),
+        // SkipPermission=false permite que DemoPolicy apruebe la lectura por etapa.
         toolOptions: new CopilotToolOptions { SkipPermission = false },
         factoryOptions: new AIFunctionFactoryOptions
         {

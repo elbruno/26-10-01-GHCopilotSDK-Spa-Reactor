@@ -1,3 +1,7 @@
+// Museum Exhibit Studio — anfitrion principal.
+// Enseña una aplicacion completa con el Copilot SDK: cliente, sesiones de
+// generacion e investigacion, system prompts, tools locales, MCP y validacion.
+// Se usa en la segunda mitad del vivo y en el estado terminado 99.
 using GitHub.Copilot;
 using GitHub.Copilot.Rpc;
 using MuseumExhibitStudio.Helpers;
@@ -15,6 +19,7 @@ const string CuratorSystemMessage = """
     Respeta exactamente la estructura solicitada y no agregues explicaciones.
     """;
 
+// El system prompt de investigacion separa datos externos de hechos aprobados.
 const string ResearchSystemMessage = """
     Eres un asistente de investigacion para un museo.
 
@@ -44,11 +49,13 @@ Console.CancelKeyPress += (_, e) => { e.Cancel = true; cancellation.Cancel(); };
 
 try
 {
+    // CopilotClient es el puente entre esta consola .NET y el runtime de Copilot.
     await using var client = new CopilotClient(new CopilotClientOptions
     {
         Connection = RuntimeConnection.ForStdio("copilot"),
         WorkingDirectory = AppContext.BaseDirectory
     });
+    // StartAsync debe completarse antes de autenticar, listar modelos o crear sesiones.
     await client.StartAsync(cancellation.Token);
 
     var auth = await client.GetAuthStatusAsync(cancellation.Token);
@@ -74,6 +81,7 @@ try
 
     if (stage.Research)
     {
+        // La investigacion usa otra sesion: Wikipedia no modifica hechos aprobados.
         Console.WriteLine("[research] sesion separada; sus notas no modifican los hechos aprobados.");
         await using var research = await client.CreateSessionAsync(
             ResearchConfig(modelId), cancellation.Token);
@@ -85,6 +93,7 @@ try
 
     if (stage.Generate)
     {
+        // CreateSessionAsync aplica SessionConfig a la conversacion del curador.
         await using var session = await client.CreateSessionAsync(
             GenerationConfig(stage, modelId, facts), cancellation.Token);
         string exhibit;
@@ -110,6 +119,7 @@ try
         if (stage.Validate)
         {
             Console.WriteLine();
+            // El host valida estructura porque no confia ciegamente en la salida del modelo.
             var validation = CuratorValidation.ValidateExhibit(exhibit);
             Console.WriteLine(CuratorValidation.FormatValidation(validation));
             if (!validation.Valid)
@@ -134,13 +144,16 @@ SessionConfig GenerationConfig(
 {
     ClientName = $"museum-exhibit-studio-{stage.Id}",
     Model = modelId,
+    // Streaming activa AssistantMessageDeltaEvent en CuratorStreamer.
     Streaming = stage.Streaming,
     OnPermissionRequest = PermissionHandler.ApproveAll,
+    // Tools contiene el handler; AvailableTools publica el nombre que puede pedir el modelo.
     Tools = stage.Facts ? [CuratorFacts.CreateApprovedFactLookup(approvedFacts)] : [],
     AvailableTools = stage.Facts ? [CuratorFacts.ApprovedFactLookupName] : [],
     EnableConfigDiscovery = false,
     EnableSkills = false,
     EnableHostGitOperations = false,
+    // SystemMessageConfig reemplaza la voz generica por la voz del curador.
     SystemMessage = stage.Persona
         ? new SystemMessageConfig
         {
@@ -156,10 +169,12 @@ SessionConfig ResearchConfig(string modelId) => new()
     Model = modelId,
     Streaming = true,
     AvailableTools = CuratorSafety.WikipediaTools.ToArray(),
+    // McpServers registra Wikipedia como fuente externa con tools limitadas.
     McpServers = new Dictionary<string, McpServerConfig>
     {
         ["wikipedia"] = CuratorSafety.WikipediaServer(AppContext.BaseDirectory)
     },
+    // La politica aprueba una invocacion por vez y deniega tools no listadas.
     OnPermissionRequest = CuratorSafety.WikipediaPermissionHandler(),
     EnableConfigDiscovery = false,
     EnableSkills = false,

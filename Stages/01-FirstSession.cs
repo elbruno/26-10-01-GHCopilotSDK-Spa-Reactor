@@ -1,3 +1,6 @@
+// Etapa 01 — Primera sesion.
+// Enseña el caso minimo: una sesion del SDK recibe un prompt y devuelve una
+// respuesta completa, sin streaming, system prompt, tools ni MCP.
 namespace AccessibilityDemo.Stages;
 
 public static class FirstSession

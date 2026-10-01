@@ -1,3 +1,6 @@
+// Self-tests locales de Museum.
+// Enseñan que hechos aprobados, validacion, extraccion de fuentes y permisos MCP
+// se comprueban sin llamar al modelo ni depender de Wikipedia durante el build.
 using System.Text.Json;
 using GitHub.Copilot;
 using GitHub.Copilot.Rpc;
@@ -10,6 +13,7 @@ public static class MuseumSelfTests
     public static void Run()
     {
         var count = 0;
+        // Check mantiene las invariantes criticas antes de ensayar con cuota real.
         void Check(bool condition, string description)
         {
             if (!condition) throw new InvalidOperationException($"FAIL: {description}");
@@ -27,6 +31,7 @@ public static class MuseumSelfTests
             count++;
         }
 
+        // La exhibicion valida representa el contrato que el modelo debe cumplir.
         const string valid = """
             # Apollo 11: un salto compartido
             ## Narrative
@@ -54,6 +59,7 @@ public static class MuseumSelfTests
         Check(extracted.Sources.Count == 1, "extract source");
 
         var handler = CuratorSafety.WikipediaPermissionHandler();
+        // Las PermissionRequest simuladas prueban la misma politica que usara el SDK.
         var allowed = new PermissionRequestMcp
         {
             ServerName = "wikipedia",

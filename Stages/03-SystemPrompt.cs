@@ -1,7 +1,11 @@
+// Etapa 03 — System prompt.
+// Enseña SystemMessageConfig: el host fija la persona, limites y lenguaje del
+// asistente antes del prompt del usuario.
 namespace AccessibilityDemo.Stages;
 
 public static class SystemPrompt
 {
+    // Estas instrucciones protegen la demo contra certificaciones inventadas.
     public const string Instructions = """
         Eres un asistente de revision de accesibilidad. Responde en espanol.
         Distingue evidencia observada, hipotesis y revision manual pendiente.

@@ -1,3 +1,7 @@
+// Seguridad y permisos de Museum.
+// Enseña allowlists para MCP, permisos de escritura acotados y extraccion segura
+// de fuentes: el host no trata contenido externo como instrucciones confiables.
+// Se usa en la investigacion Wikipedia y en pruebas locales.
 using GitHub.Copilot;
 using GitHub.Copilot.Rpc;
 
@@ -27,7 +31,7 @@ public static class CuratorSafety
         "wikipedia-readArticle"
     ];
 
-    // Return this config as the "wikipedia" value in SessionConfig.McpServers.
+    // Esta configuracion se coloca como valor "wikipedia" en SessionConfig.McpServers.
     public static McpStdioServerConfig WikipediaServer(string baseDirectory)
     {
         var server = Path.GetFullPath(Path.Combine(
@@ -47,6 +51,7 @@ public static class CuratorSafety
         };
     }
 
+    // OnPermissionRequest permite search/readArticle una vez y rechaza todo lo demas.
     public static Func<PermissionRequest, PermissionInvocation, Task<PermissionDecision>> WikipediaPermissionHandler() =>
         (request, _) =>
         {
@@ -68,6 +73,7 @@ public static class CuratorSafety
         }
 
         var lines = content.ReplaceLineEndings("\n").Split('\n');
+        // Las fuentes se extraen por contrato textual; no se acepta cualquier URL suelta.
         var sourcesIndex = Array.FindLastIndex(
             lines,
             line => line.Trim().Equals("## Sources", StringComparison.OrdinalIgnoreCase));
@@ -116,6 +122,7 @@ public static class CuratorSafety
         var normalizedWorkingDirectory = Path.GetFullPath(workingDirectory);
         var allowedPath = Path.GetFullPath(Path.Combine(normalizedWorkingDirectory, ExhibitFileName));
 
+        // PermissionRequestWrite queda limitado a exhibit.html dentro del directorio de trabajo.
         return (request, _) =>
         {
             var decision = request is PermissionRequestWrite write &&
@@ -142,6 +149,7 @@ public static class CuratorSafety
             ? Path.GetFullPath(fileName)
             : Path.GetFullPath(Path.Combine(workingDirectory, fileName));
 
+        // La comparacion respeta la sensibilidad a mayusculas del sistema operativo.
         var pathComparison = OperatingSystem.IsWindows()
             ? StringComparison.OrdinalIgnoreCase
             : StringComparison.Ordinal;

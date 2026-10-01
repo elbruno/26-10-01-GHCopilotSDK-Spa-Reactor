@@ -1,3 +1,6 @@
+// Etapa 04 — Tool local.
+// Enseña CopilotTool.DefineTool desde el punto de vista del modelo:
+// el asistente debe pedir una regla WCAG y basar su respuesta en ese resultado.
 namespace AccessibilityDemo.Stages;
 
 public static class LocalTool

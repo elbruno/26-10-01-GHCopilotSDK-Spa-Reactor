@@ -1,3 +1,7 @@
+// Self-tests locales de Accessibility.
+// Enseñan que las garantias criticas no dependen de una respuesta del modelo:
+// permisos, validacion de argumentos, snapshots acotados y catalogo se prueban
+// de forma determinista antes del vivo.
 using System.Text.Json;
 using GitHub.Copilot;
 
@@ -8,12 +12,14 @@ public static class SelfTests
     public static void Run()
     {
         var count = 0;
+        // Check falla rapido para no continuar con una demo insegura o mal configurada.
         void Check(bool condition, string description)
         {
             if (!condition) throw new InvalidOperationException($"FAIL: {description}");
             count++;
         }
         var policy = new DemoPolicy(true, true);
+        // Las PermissionRequest simuladas prueban la misma allowlist usada por el SDK.
         PermissionRequestMcp Navigation(string url) => new()
         {
             ServerName = "playwright", ToolName = "browser_navigate",
@@ -64,6 +70,7 @@ public static class SelfTests
         try
         {
             var reader = new SnapshotReader(directory);
+            // El snapshot debe ser nuevo, local y pequeno; no se acepta evidencia vieja.
             try { reader.Read(); throw new InvalidOperationException("Missing snapshot accepted."); }
             catch (FileNotFoundException) { count++; }
             var file = Path.Combine(directory, "page-test.yml");

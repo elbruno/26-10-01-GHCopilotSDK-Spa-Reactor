@@ -1,3 +1,6 @@
+// Etapa 02 — Streaming.
+// Muestra que SessionConfig.Streaming cambia la entrega de la respuesta:
+// el runtime emite deltas mientras el asistente escribe.
 namespace AccessibilityDemo.Stages;
 
 public static class StreamingSession

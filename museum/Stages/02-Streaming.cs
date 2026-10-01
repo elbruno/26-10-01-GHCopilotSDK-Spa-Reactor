@@ -1,3 +1,6 @@
+// Etapa Museum 02 — Streaming.
+// Enseña como SessionConfig.Streaming permite mostrar la narracion por deltas
+// mientras el asistente escribe para el publico.
 namespace MuseumExhibitStudio.Stages;
 
 public static class StreamingCurator

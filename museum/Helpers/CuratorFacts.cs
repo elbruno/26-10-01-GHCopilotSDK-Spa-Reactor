@@ -1,3 +1,7 @@
+// Hechos aprobados y tool local del curador.
+// Enseña que una aplicacion puede aportar conocimiento propio al modelo con
+// CopilotTool.DefineTool, sin confiar en memoria del modelo ni en la web.
+// Se usa desde Museum 04, 05 y 99.
 using GitHub.Copilot;
 using Microsoft.Extensions.AI;
 
@@ -12,6 +16,7 @@ public static class CuratorFacts
 
     public const string ApprovedFactLookupName = "approved_fact_lookup";
 
+    // Estos datos pertenecen al host; no vienen del modelo.
     public static IReadOnlyList<string> Apollo11Facts { get; } =
     [
         "Apollo 11 launched July 16, 1969.",
@@ -50,6 +55,7 @@ public static class CuratorFacts
     {
         ArgumentNullException.ThrowIfNull(facts);
 
+        // La tool nunca devuelve listas vacias, enormes ni texto sin acotar.
         var boundedFacts = facts
             .Select(fact => fact?.Trim())
             .Where(fact => !string.IsNullOrWhiteSpace(fact))
@@ -74,13 +80,15 @@ public static class CuratorFacts
         return boundedFacts;
     }
 
-    // The application owns the approved facts. This tool is the only way the curator can read them.
+    // La aplicacion posee los hechos aprobados; el curador los lee solo por esta tool.
     public static AIFunction CreateApprovedFactLookup(IEnumerable<string?> facts)
     {
         var approvedFacts = BoundFacts(facts);
 
+        // DefineTool convierte una funcion .NET en una capacidad disponible para la sesion.
         return CopilotTool.DefineTool(
             () => Task.FromResult(approvedFacts),
+            // SkipPermission es seguro aqui porque la lectura es interna, acotada y seleccionada.
             toolOptions: new CopilotToolOptions { SkipPermission = true },
             factoryOptions: new AIFunctionFactoryOptions
             {

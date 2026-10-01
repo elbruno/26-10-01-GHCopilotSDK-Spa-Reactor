@@ -1,3 +1,7 @@
+// Demo Accessibility — programa anfitrion.
+// Enseña el ciclo completo del SDK: iniciar el runtime, crear sesiones,
+// registrar tools, escuchar eventos y validar permisos durante el directo.
+// Se usa para ejecutar preflight, self-test, etapas 01..06 y estado 99.
 using AccessibilityDemo.Runtime;
 using AccessibilityDemo.Stages;
 using GitHub.Copilot;
@@ -37,12 +41,14 @@ using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(180));
 Console.CancelKeyPress += (_, e) => { e.Cancel = true; cancellation.Cancel(); };
 try
 {
-    // Explicit CLI path keeps the rehearsal on the installed runtime, not an implicit download.
+    // CopilotClient representa al host .NET que conversa con el runtime local.
+    // RuntimeConnection.ForStdio("copilot") usa el CLI instalado para no descargar otro runtime.
     await using var client = new CopilotClient(new CopilotClientOptions
     {
         Connection = RuntimeConnection.ForStdio("copilot"),
         WorkingDirectory = AppContext.BaseDirectory
     });
+    // StartAsync arranca el runtime antes de autenticar, listar modelos o crear sesiones.
     await client.StartAsync(cancellation.Token);
     var auth = await client.GetAuthStatusAsync(cancellation.Token);
     Console.WriteLine($"[auth] authenticated={auth.IsAuthenticated}");
@@ -68,6 +74,7 @@ try
     var policy = new DemoPolicy(stage.Rules, stage.Browser);
     var snapshots = new SnapshotReader(runDirectory);
     var ruleCalls = 0;
+    // Tools contiene los handlers .NET; AvailableTools expone solo sus nombres al modelo.
     List<AIFunctionDeclaration> tools = [];
     List<string> names = [];
     if (stage.Rules)
@@ -88,14 +95,17 @@ try
     var config = new SessionConfig
     {
         Model = modelId,
+        // Streaming=true hace que el SDK emita AssistantMessageDeltaEvent por fragmentos.
         Streaming = stage.Streaming,
         AvailableTools = names,
         Tools = tools,
+        // OnPermissionRequest deja que el host apruebe o rechace cada accion sensible.
         OnPermissionRequest = policy.Decide,
         WorkingDirectory = runDirectory,
         EnableConfigDiscovery = false,
         EnableSkills = false,
         EnableHostGitOperations = false,
+        // SystemMessageConfig reemplaza la persona por defecto para fijar limites de la demo.
         SystemMessage = stage.Persona
             ? new SystemMessageConfig { Mode = SystemMessageMode.Replace, Content = SystemPrompt.Instructions }
             : null
@@ -109,6 +119,7 @@ try
 
         config.McpServers = new Dictionary<string, McpServerConfig>
         {
+            // McpServers conecta Playwright como servidor externo con tools acotadas.
             ["playwright"] = new McpStdioServerConfig
             {
                 Command = "node",
@@ -121,6 +132,7 @@ try
         };
     }
 
+    // CreateSessionAsync congela esta configuracion para un hilo de conversacion concreto.
     await using var session = await client.CreateSessionAsync(config, cancellation.Token);
     var deltas = 0;
     var successfulTools = 0;
@@ -129,6 +141,7 @@ try
     {
         switch (e)
         {
+            // Los deltas permiten mostrar la respuesta en vivo sin esperar al mensaje final.
             case AssistantMessageDeltaEvent delta when stage.Streaming:
                 if (!string.IsNullOrEmpty(delta.Data.DeltaContent))
                 {
@@ -136,6 +149,7 @@ try
                     Console.Write(delta.Data.DeltaContent);
                 }
                 break;
+            // Estos eventos prueban en pantalla cuando el runtime invoca una tool.
             case ToolExecutionStartEvent tool:
                 Console.WriteLine($"\n[tool:start] {tool.Data.ToolName}");
                 break;
@@ -143,6 +157,7 @@ try
                 if (tool.Data.Success) successfulTools++;
                 Console.WriteLine($"\n[tool:done] success={tool.Data.Success}");
                 break;
+            // Un SessionErrorEvent invalida el ensayo aunque el proceso siga vivo.
             case SessionErrorEvent error:
                 sessionErrors++;
                 Console.Error.WriteLine($"\n[session:error] {error.Data.Message}");
@@ -152,6 +167,7 @@ try
 
     async Task Turn(string prompt)
     {
+        // SendAndWaitAsync envia un turno y espera SessionIdleEvent antes de leer el resultado.
         var result = await session.SendAndWaitAsync(new MessageOptions { Prompt = prompt },
             TimeSpan.FromSeconds(90), cancellation.Token);
         if (sessionErrors != 0)
@@ -163,6 +179,7 @@ try
     }
 
     await Turn(stage.Prompt);
+    // Estas comprobaciones deterministas evitan decir "funciono" si el modelo no uso el SDK.
     if (!stage.Rules && !stage.Browser && successfulTools != 0)
         throw new InvalidOperationException("Se ejecuto una tool inesperada en una etapa sin capacidades.");
     if (stage.Streaming && deltas == 0)
