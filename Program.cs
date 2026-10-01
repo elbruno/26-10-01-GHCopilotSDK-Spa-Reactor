@@ -25,9 +25,10 @@ if (args is ["--self-test"])
 }
 
 if (args is not ["--preflight"] &&
+    args is not ["--review", "--model", _] &&
     args is not ["--stage", _, "--model", _])
 {
-    Console.Error.WriteLine("Uso: --preflight | --self-test | --serve | --stage 01..06/99 --model ID");
+    Console.Error.WriteLine("Uso: --preflight | --self-test | --serve | --review --model ID | --stage 01..06/99 --model ID");
     Environment.ExitCode = 2;
     return;
 }
@@ -56,8 +57,8 @@ try
         return;
     }
 
-    var stage = DemoStage.Find(args[1]);
-    var modelId = args[3];
+    var stage = args[0] == "--review" ? Finished.Create() : DemoStage.Find(args[1]);
+    var modelId = args[0] == "--review" ? args[2] : args[3];
     if (!models.Any(m => m.Id == modelId))
         throw new ArgumentException("Modelo no disponible. Consulta --preflight.");
 
@@ -104,7 +105,7 @@ try
         var server = Path.Combine(AppContext.BaseDirectory, "..", "..", "..",
             "node_modules", "@playwright", "mcp", "cli.js");
         if (!File.Exists(server))
-            throw new FileNotFoundException("Falta Playwright MCP. Ejecuta npm ci --prefix .\\demos.", server);
+            throw new FileNotFoundException("Falta Playwright MCP. Ejecuta npm ci en la raiz del repositorio.", server);
 
         config.McpServers = new Dictionary<string, McpServerConfig>
         {

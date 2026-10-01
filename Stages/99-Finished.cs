@@ -2,7 +2,7 @@ namespace AccessibilityDemo.Stages;
 
 public static class Finished
 {
-    public static DemoStage Create() => new("99", "Respaldo terminado: Accessibility Reviewer",
+    public static DemoStage Create() => new("99", "Aplicacion completa: Accessibility Reviewer",
         McpReview.ReviewPrompt + """
 
         Consulta accessibility_rule_lookup con criterion 4.1.2 para el textbox sin nombre.

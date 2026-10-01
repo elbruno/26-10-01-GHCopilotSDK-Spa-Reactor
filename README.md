@@ -4,31 +4,27 @@ Adaptación .NET del [workshop oficial](https://github.com/github/copilot-sdk-wo
 Ver `THIRD-PARTY-NOTICES.txt`. Proyecto único, etapas numeradas; no escribir
 todo el código en vivo.
 
+Guía complementaria: [Streaming de una respuesta — español](docs/02-streaming-es.md).
+
 ## Preparación
 
 Requisitos: .NET 10 SDK, Node.js 22 o superior, GitHub Copilot CLI
 autenticado y Microsoft Edge o Google Chrome. Desde la raíz de este repositorio:
 
 ```powershell
-.\Initialize-DemoRepo.ps1
-```
-
-El script valida las versiones, restaura dependencias, compila, instala
-Playwright MCP localmente y ejecuta las comprobaciones sin llamar al modelo.
-No se necesita un entorno virtual de Python. Si falta autenticación, ejecutar
-`copilot login` fuera de cámara y volver a ejecutar el script.
-
-Comprobaciones equivalentes, si se desea ejecutarlas por separado:
-
-```powershell
 dotnet restore .\AccessibilityDemo.csproj --locked-mode
-dotnet build .\AccessibilityDemo.csproj --no-restore
 npm ci --no-audit --no-fund
+dotnet build .\AccessibilityDemo.csproj --no-restore
 dotnet run --no-build --project .\AccessibilityDemo.csproj -- --self-test
 dotnet run --no-build --project .\AccessibilityDemo.csproj -- --preflight
 ```
 
-En un terminal aparte, mantener la página mientras se ejecutan 05, 06 o 99:
+No se necesita un entorno virtual de Python para la demo .NET. Los ejemplos
+opcionales de Python, Go y TypeScript están en [`examples`](examples/README.md).
+Si falta autenticación, ejecutar `copilot login` fuera de cámara.
+
+En un terminal aparte, mantener la página mientras se ejecutan `--review`,
+05, 06 o 99:
 
 ```powershell
 dotnet run --no-build --project .\AccessibilityDemo.csproj -- --serve
@@ -40,6 +36,16 @@ El servidor solo sirve esta página, sin archivos arbitrarios, redirecciones,
 scripts ni recursos externos. Detener con Ctrl+C al terminar.
 
 ## Etapas
+
+La aplicación completa se ejecuta con:
+
+```powershell
+dotnet run --no-build --project .\AccessibilityDemo.csproj -- --review --model gpt-5.4-mini
+```
+
+Este flujo inspecciona la página controlada, consulta el catálogo WCAG de la
+aplicación, usa MCP y demuestra una denegación. Las etapas siguientes son
+checkpoints didácticos para aislar cada concepto:
 
 ```powershell
 dotnet run --no-build --project .\AccessibilityDemo.csproj -- --stage 01 --model gpt-5.4-mini
@@ -55,7 +61,7 @@ Cambiar solo `01` por la etapa elegida:
 | 04 | `04-LocalTool.cs` | Permiso `custom-tool`, handler 4.1.2 y éxito real. |
 | 05 | `05-Mcp.cs` | Navegación MCP autorizada y lectura del snapshot de esta ejecución. |
 | 06 | `06-Permissions.cs` | Primero permitido; luego `/blocked` denegado, tool sin éxito. |
-| 99 | `99-Finished.cs` | Respaldo completo: persona, streaming, MCP, catálogo y denegación. |
+| 99 | `99-Finished.cs` | Aplicación completa: persona, streaming, MCP, catálogo y denegación. |
 
 `Program.cs` muestra cliente → autenticación → configuración → sesión →
 eventos → turno → comprobaciones → dispose. `Runtime\DemoPolicy.cs` muestra
