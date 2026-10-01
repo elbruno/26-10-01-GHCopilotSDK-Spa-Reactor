@@ -122,14 +122,15 @@ dotnet run --no-build --project .\AccessibilityDemo.csproj -- --stage 05 --model
 
 ## Bloque opcional: BYOK con Microsoft Foundry
 
-La consola `byok` usa `ProviderConfig`, Responses API y un token Microsoft Entra
-obtenido mediante Azure CLI. No usa una API key ni imprime el token.
+La consola `byok` usa `ProviderConfig` y Responses API. Los perfiles
+`gpt-6.1-sol` y `gpt-6-luna` usan Microsoft Entra; `grok-4.6` usa API key.
+Ninguna credencial se imprime o se guarda.
 
-Configurar en un terminal no compartido:
+Configurar en un terminal no compartido con dot-sourcing:
 
 ```powershell
-$env:FOUNDRY_RESOURCE_URL = 'https://<resource>.openai.azure.com'
-$env:FOUNDRY_MODEL = '<deployment-name>'
+. .\byok\Set-ByokDemo.ps1 -Model gpt-6.1-sol
+# Alternativas: gpt-6-luna o grok-4.6
 ```
 
 Preparar y ejecutar:
@@ -137,6 +138,7 @@ Preparar y ejecutar:
 ```powershell
 dotnet restore .\byok\ByokConsole.csproj --locked-mode
 dotnet build .\byok\ByokConsole.csproj --no-restore
+dotnet run --no-build --project .\byok\ByokConsole.csproj -- --list-models
 dotnet run --no-build --project .\byok\ByokConsole.csproj -- --preflight
 dotnet run --no-build --project .\byok\ByokConsole.csproj -- --run
 ```

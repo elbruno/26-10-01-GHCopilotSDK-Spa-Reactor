@@ -24,26 +24,37 @@ public static class ConceptSelfTests
 
         // Caso valido: respuesta agregada que cumple el contrato.
         var safe = WorkIqSafety.ParseAndValidate(
-            """{"totalItems":3,"categories":[{"name":"seguimiento","count":2}],"urgentCount":1}""");
+            """{"totalItems":3,"categories":[{"name":"seguimiento","count":3}],"urgentCount":1,"overlapCount":0}""");
         Check(safe.TotalItems == 3, "safe total", ref checks);
         Check(safe.Categories.Single().Name == "seguimiento", "safe category", ref checks);
+        Check(safe.OverlapCount == 0, "safe overlap", ref checks);
 
         // Fuga por campo extra: aunque el modelo "ayude", el host lo bloquea.
         ExpectFailure(
-            """{"totalItems":1,"categories":[],"urgentCount":0,"subject":"privado"}""",
+            """{"totalItems":1,"categories":[{"name":"otro","count":1}],"urgentCount":0,"overlapCount":0,"subject":"privado"}""",
             "reject extra field",
             ref checks);
 
         // Fuga por nombre propio disfrazado de categoria.
         ExpectFailure(
-            """{"totalItems":1,"categories":[{"name":"Proyecto secreto","count":1}],"urgentCount":0}""",
+            """{"totalItems":1,"categories":[{"name":"Proyecto secreto","count":1}],"urgentCount":0,"overlapCount":0}""",
             "reject unsafe category",
             ref checks);
 
         // Conteo fuera de rango: senal de que el modelo no siguio el contrato.
         ExpectFailure(
-            """{"totalItems":99,"categories":[],"urgentCount":0}""",
+            """{"totalItems":99,"categories":[],"urgentCount":0,"overlapCount":0}""",
             "reject unbounded count",
+            ref checks);
+
+        // El contrato no admite omitir overlapCount ni inventar subtotales.
+        ExpectFailure(
+            """{"totalItems":1,"categories":[{"name":"otro","count":1}],"urgentCount":0}""",
+            "reject missing field",
+            ref checks);
+        ExpectFailure(
+            """{"totalItems":1,"categories":[{"name":"reuniones","count":1}],"urgentCount":0,"overlapCount":2}""",
+            "reject impossible overlap",
             ref checks);
 
         // La pregunta del presentador tambien se valida: debe ser agregada.

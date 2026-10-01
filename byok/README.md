@@ -1,43 +1,67 @@
-# BYOK con Microsoft Foundry y Microsoft Entra
+# BYOK con Microsoft Foundry
 
-Esta consola demuestra que GitHub Copilot SDK puede usar el runtime de Copilot
-con un proveedor de modelos propio. La autenticación del modelo usa
-`AzureCliCredential`; no usa una API key ni imprime tokens.
+Esta consola demuestra que GitHub Copilot SDK mantiene el runtime y cambia el
+proveedor de inferencia mediante `ProviderConfig`.
 
-Requisitos:
+## Qué muestra
 
-1. GitHub Copilot CLI instalado. BYOK evita la autenticación GitHub Copilot para
-   el modelo, pero todavía usa el runtime local.
-2. Azure CLI autenticado fuera de cámara con acceso al recurso Foundry.
-3. Un deployment compatible con Responses API.
+1. `CopilotClient.ListModelsAsync()` consulta el catálogo del runtime Copilot.
+2. `ProviderConfig` selecciona explícitamente el modelo que recibirá Foundry.
+3. `/openai/v1/models` comprueba el catálogo del proveedor sin gastar una
+   inferencia.
+4. La misma aplicación puede usar Microsoft Entra o API key.
 
-Configurar solo en el terminal no compartido:
+Los deployments BYOK no se descubren automáticamente con `ListModelsAsync()`.
+Ese método devuelve modelos y metadatos que el runtime sabe orquestar.
+
+## Perfiles preparados
+
+| Modelo | Autenticación |
+|---|---|
+| `gpt-6.1-sol` | Microsoft Entra mediante `AzureCliCredential` |
+| `gpt-6-luna` | Microsoft Entra mediante `AzureCliCredential` |
+| `grok-4.6` | API key con header `api-key` |
+
+## Configuración segura
+
+Ejecutar fuera de cámara con **dot-sourcing**:
 
 ```powershell
-$env:FOUNDRY_RESOURCE_URL = 'https://<resource>.openai.azure.com'
-$env:FOUNDRY_MODEL = '<deployment-name>'
+. .\Set-ByokDemo.ps1 -Model gpt-6.1-sol
 ```
 
-Preparar y comprobar Microsoft Entra sin llamar al modelo:
+Alternativas:
+
+```powershell
+. .\Set-ByokDemo.ps1 -Model gpt-6-luna
+. .\Set-ByokDemo.ps1 -Model grok-4.6
+```
+
+El script pide la URL si `FOUNDRY_RESOURCE_URL` no existe. Para Grok pide la
+key con entrada oculta. Las variables viven solo en el proceso actual:
+
+- `FOUNDRY_RESOURCE_URL`;
+- `FOUNDRY_MODEL`;
+- `FOUNDRY_AUTH_MODE`;
+- `FOUNDRY_API_KEY`, solo para el perfil `api-key`.
+
+No guardar estas variables, endpoints o credenciales en el repositorio.
+
+## Preparar y ejecutar
 
 ```powershell
 dotnet restore .\ByokConsole.csproj --locked-mode
 dotnet build .\ByokConsole.csproj --no-restore
+
+# Catálogo que conoce el runtime Copilot:
+dotnet run --no-build --project .\ByokConsole.csproj -- --list-models
+
+# Runtime + catálogo Foundry, sin prompt:
 dotnet run --no-build --project .\ByokConsole.csproj -- --preflight
-```
 
-Ejecutar:
-
-```powershell
+# Inferencia real en Foundry:
 dotnet run --no-build --project .\ByokConsole.csproj -- --run
 ```
 
-El código configura `ProviderConfig` con:
-
-- `Type = "openai"`;
-- endpoint Microsoft Foundry `/openai/v1/`;
-- `WireApi = "responses"`;
-- `BearerTokenProvider` respaldado por Microsoft Entra y Azure CLI.
-
-Las variables contienen configuración, no deben guardarse en el repositorio.
-El token se obtiene bajo demanda y nunca se escribe en consola.
+La salida no imprime endpoint, token ni API key. El marcador final indica solo
+proveedor, modo de autenticación y modelo.

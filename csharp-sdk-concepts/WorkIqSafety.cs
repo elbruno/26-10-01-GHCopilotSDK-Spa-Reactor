@@ -28,7 +28,8 @@ public sealed record WorkIqCategory(
 public sealed record WorkIqSummary(
     [property: JsonPropertyName("totalItems")] int TotalItems,
     [property: JsonPropertyName("categories")] IReadOnlyList<WorkIqCategory> Categories,
-    [property: JsonPropertyName("urgentCount")] int UrgentCount);
+    [property: JsonPropertyName("urgentCount")] int UrgentCount,
+    [property: JsonPropertyName("overlapCount")] int OverlapCount);
 
 public static class WorkIqSafety
 {
@@ -60,7 +61,7 @@ public static class WorkIqSafety
         "¿Cuántos temas de correo requieren atención en las últimas 24 horas?",
         "¿En qué categorías generales se agrupan mis temas recientes?",
         "¿Cuántos temas urgentes y cuántos de seguimiento tengo?",
-        "¿Cuánto de lo reciente es administrativo y cuánto son reuniones?"
+        "¿Cuántas reuniones tengo mañana y cuántas se solapan?"
     ];
 
     // El system prompt se reemplaza por completo (SystemMessageMode.Replace).
@@ -68,13 +69,23 @@ public static class WorkIqSafety
     public const string SystemMessage = """
         Eres un filtro de privacidad para una demo publica.
         Usa exclusivamente workiq-ask y nunca uses tools de escritura.
-        Analiza solamente correos de las ultimas 24 horas.
+        Responde exactamente al origen y a la ventana temporal de la pregunta:
+        correo, calendario o tareas; ultimas horas, hoy o manana.
+        No sustituyas una consulta de calendario por correos recientes.
         No incluyas nombres, direcciones, dominios, asuntos, citas, fragmentos, URLs,
         nombres de empresas, proyectos ni ningun texto procedente de un mensaje.
         Devuelve solamente JSON sin Markdown con este contrato exacto:
-        {"totalItems":0,"categories":[{"name":"reuniones","count":0}],"urgentCount":0}
+        {"totalItems":0,"categories":[{"name":"reuniones","count":0}],"urgentCount":0,"overlapCount":0}
         Los unicos nombres de categoria permitidos son reuniones, seguimiento,
         documentos, administrativo y otro. Los valores deben ser enteros entre 0 y 20.
+        Clasifica reuniones y coordinacion de agenda como reuniones; pedidos que
+        necesitan respuesta o accion como seguimiento; revisiones o adjuntos como
+        documentos; aprobaciones, gastos y tramites como administrativo. Usa otro
+        solo cuando ninguna categoria anterior corresponda.
+        overlapCount es la cantidad de elementos de calendario que participan en al
+        menos un solapamiento dentro de la ventana pedida; usa 0 fuera del calendario.
+        urgentCount es 0 cuando la pregunta no pide urgencia o prioridad.
+        Las categorias no se repiten y la suma de sus conteos es totalItems.
         Cualquiera que sea la pregunta del usuario, responde siempre con ese mismo
         contrato agregado. Si la pregunta pide contenido textual, devuelve los conteos.
         """;
@@ -139,6 +150,9 @@ public static class WorkIqSafety
         Invoca workiq-ask para responder esta pregunta de forma agregada:
         {question}
 
+        Respeta literalmente el origen y la ventana temporal solicitados. Si pregunta
+        por reuniones de manana, consulta el calendario de manana. Si pregunta por
+        correos de las ultimas 24 horas, consulta solo ese correo y ese intervalo.
         Sigue el contrato JSON y las restricciones de privacidad del system prompt.
         No muestres ni repitas ningun dato original.
         """;
@@ -166,26 +180,36 @@ public static class WorkIqSafety
         // Lista blanca de campos: un campo extra seria una fuga de datos.
         var allowedFields = new HashSet<string>(StringComparer.Ordinal)
         {
-            "totalItems", "categories", "urgentCount"
+            "totalItems", "categories", "urgentCount", "overlapCount"
         };
-        if (root.ValueKind != JsonValueKind.Object ||
-            root.EnumerateObject().Any(property => !allowedFields.Contains(property.Name)))
+        var actualFields = root.ValueKind == JsonValueKind.Object
+            ? root.EnumerateObject().Select(property => property.Name).ToHashSet(StringComparer.Ordinal)
+            : [];
+        if (root.ValueKind != JsonValueKind.Object || !actualFields.SetEquals(allowedFields))
         {
-            throw new InvalidOperationException("La respuesta contiene campos no permitidos.");
+            throw new InvalidOperationException("La respuesta no cumple el contrato de campos requerido.");
         }
 
         var summary = JsonSerializer.Deserialize<WorkIqSummary>(trimmed)
             ?? throw new InvalidOperationException("La respuesta agregada esta vacia.");
         ValidateCount(summary.TotalItems, "totalItems");
         ValidateCount(summary.UrgentCount, "urgentCount");
+        ValidateCount(summary.OverlapCount, "overlapCount");
+        if (summary.UrgentCount > summary.TotalItems ||
+            summary.OverlapCount > summary.TotalItems)
+        {
+            throw new InvalidOperationException("Los subconteos no pueden superar totalItems.");
+        }
 
         // Categorias: nombre en lista blanca, en minusculas y conteo acotado.
         // Las mayusculas se bloquean porque delatan un nombre propio.
         if (summary.Categories.Count > AllowedCategories.Count ||
+            summary.Categories.Select(category => category.Name).Distinct().Count() != summary.Categories.Count ||
             summary.Categories.Any(category =>
                 !AllowedCategories.Contains(category.Name) ||
                 category.Name.Any(char.IsUpper) ||
-                category.Count is < 0 or > 20))
+                category.Count is < 0 or > 20) ||
+            summary.Categories.Sum(category => category.Count) != summary.TotalItems)
         {
             throw new InvalidOperationException("La respuesta contiene categorias o conteos no permitidos.");
         }
@@ -198,6 +222,7 @@ public static class WorkIqSafety
     {
         Console.WriteLine($"Temas agregados: {summary.TotalItems}");
         Console.WriteLine($"Urgentes: {summary.UrgentCount}");
+        Console.WriteLine($"Elementos con solapamiento: {summary.OverlapCount}");
         foreach (var category in summary.Categories.OrderByDescending(item => item.Count))
             Console.WriteLine($"- {category.Name}: {category.Count}");
     }
